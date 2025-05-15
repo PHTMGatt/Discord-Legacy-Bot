@@ -35,17 +35,25 @@ function toCamelCase(input) {
     .join('');
 }
 
-client.on('messageCreate', (message) => {
+client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
   const username = message.member?.displayName || message.author.username;
-  const cleaned = toCamelCase(message.content);
+
+  // Convert to strict CamelCase
+  const cleaned = message.content
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9 ]/g, '')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
 
   const reply = `✅ ${username} committed: ${cleaned}`;
 
-  message.delete()
-    .then(() => message.channel.send(reply))
-    .catch(console.error);
+  try {
+    await message.delete();
+    await message.channel.send(reply);
+  } catch (err) {
+    console.error('❌ Failed to delete or send message:', err);
+  }
 });
-
-client.login(process.env.DISCORD_TOKEN);
