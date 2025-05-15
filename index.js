@@ -37,10 +37,11 @@ function toCamelCase(input) {
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
-  const permissions = message.channel.permissionsFor(message.guild.members.me);
+  // ✅ Only run in channels where the bot has Send Messages permission
+  const botMember = await message.guild.members.fetchMe();
+  const botPermissions = message.channel.permissionsFor(botMember);
 
-  // #Note - Ignore if bot doesn't have permission to send messages in this channel
-  if (!permissions || !permissions.has('SendMessages')) return;
+  if (!botPermissions || !botPermissions.has('SendMessages')) return;
 
   const username = message.member?.displayName || message.author.username;
   const cleanedMessage = toCamelCase(message.content);
@@ -54,6 +55,7 @@ client.on('messageCreate', async (message) => {
     console.error('❌ Failed to delete or respond:', error);
   }
 });
+
 
 // #Note - Start the bot using the token from .env
 client.login(process.env.DISCORD_TOKEN);
