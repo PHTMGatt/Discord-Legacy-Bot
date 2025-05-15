@@ -36,3 +36,5 @@ client.on('messageCreate', (message) => {
 
 // #Note - Start the bot using the token from .env
 client.login(process.env.DISCORD_TOKEN);
+
+// Note - The bot will respond to messages in the channel with a confirmation message
