@@ -1,6 +1,6 @@
 # 🍼 Commit Formatter Bot
 
-![Bot Face](./DISCORD-BOT.avif)
+<img src="./DISCORD-BOT.avif" alt="Bot Face" width="200"/>
 
 A tiny helper bot that lives in your Discord server and makes commit messages adorable 🧸  
 It listens to whatever you type and replies with a cute little formatted update 💬✨
@@ -23,37 +23,10 @@ It replies with:
 
 ---
 
-## ⚙️ How to Use
-
-1. Install dependencies  
-   `npm install`
-
-2. Create a `.env` file with your token  
-   `DISCORD_TOKEN=your_token_here`
-
-3. Start the bot  
-   `npm start`
-
----
-
-## 🌐 Render Setup
+## 🌐 Render
 
 Live URL:  
 [https://discord-bot-1-e79s.onrender.com](https://discord-bot-1-e79s.onrender.com)
-
-Build command:  
-`npm run render-build`
-
-Start command:  
-`npm start`
-
-Your `package.json` should include:
-
-"scripts": {{  
-  "start": "node index.js",  
-  "build": "echo 'no build step needed'",  
-  "render-build": "npm install && npm run build"  
-}}
 
 ---
 
