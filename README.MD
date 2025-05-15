@@ -45,7 +45,7 @@ The bot replies with:
 ---
 
 ### 🛠 Add the Bot to Your Server
-[➕ Invite Commit Formatter Bot](https://discord.com/oauth2/authorize?client_id=1372387773062844436&scope=bot&permissions=357376)
+[➕ Invite Commit Formatter Bot](https://discord.com/oauth2/authorize?client_id=1372387773062844436&scope=bot&permissions=345152)
 
 ---
 

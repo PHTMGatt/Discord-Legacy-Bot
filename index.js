@@ -36,8 +36,8 @@ function toCamelCase(input) {
 // #Note - Only respond in approved channels (those where bot has "Send Messages")
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
+  if (!message.guild) return; // Ignore DMs
 
-  // ✅ Only run in channels where the bot has Send Messages permission
   const botMember = await message.guild.members.fetchMe();
   const botPermissions = message.channel.permissionsFor(botMember);
 
@@ -46,16 +46,17 @@ client.on('messageCreate', async (message) => {
   const username = message.member?.displayName || message.author.username;
   const cleanedMessage = toCamelCase(message.content);
 
-  const reply = `✅ ${username} dropped a lil mimmit: \`${cleanedMessage}\``;
+  const reply = `✅ ${username} committed: \`${cleanedMessage}\``;
 
   try {
-    await message.delete();
+    if (botPermissions.has('ManageMessages')) {
+      await message.delete();
+    }
     await message.channel.send(reply);
   } catch (error) {
     console.error('❌ Failed to delete or respond:', error);
   }
 });
-
 
 // #Note - Start the bot using the token from .env
 client.login(process.env.DISCORD_TOKEN);
