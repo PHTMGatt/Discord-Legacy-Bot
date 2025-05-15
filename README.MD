@@ -38,6 +38,9 @@ It replies with:
 
 ## 🌐 Render Setup
 
+Live URL:  
+[https://discord-bot-1-e79s.onrender.com](https://discord-bot-1-e79s.onrender.com)
+
 Build command:  
 `npm run render-build`
 
@@ -46,11 +49,11 @@ Start command:
 
 Your `package.json` should include:
 
-"scripts": {  
+"scripts": {{  
   "start": "node index.js",  
   "build": "echo 'no build step needed'",  
   "render-build": "npm install && npm run build"  
-}
+}}
 
 ---
 
