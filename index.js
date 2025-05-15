@@ -23,18 +23,21 @@ client.once('ready', () => {
   console.log(`✅ Bot is live as ${client.user.tag}`);
 });
 
+// #Note - Convert user message to cleaner format
+function simplifyMessage(raw) {
+  const cleaned = raw.toLowerCase().trim();
+  const words = cleaned.split(" ");
+  return words.slice(0, 5).join(" "); // Limit to first 5 words
+}
+
 client.on('messageCreate', (message) => {
-  // #Note - Ignore bot’s own messages
   if (message.author.bot) return;
 
-  const content = message.content.trim().toLowerCase();
   const username = message.member?.displayName || message.author.username;
+  const shortMessage = simplifyMessage(message.content);
 
-  const reply = `✅ [${username}] added a [${content}]`;
+  const reply = `✅ ${username} pushed: "${shortMessage}"`;
   message.channel.send(reply);
 });
 
-// #Note - Start the bot using the token from .env
 client.login(process.env.DISCORD_TOKEN);
-
-// Note - The bot will respond to messages in the channel with a confirmation message
