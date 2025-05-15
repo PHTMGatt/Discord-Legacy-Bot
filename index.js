@@ -33,13 +33,19 @@ function toCamelCase(input) {
     .join('');
 }
 
+// #Note - Only respond in approved channels
+const allowedChannelIds = new Set();
+
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
+
+  // #Note - Ignore messages from disallowed channels
+  if (!allowedChannelIds.has(message.channel.id)) return;
 
   const username = message.member?.displayName || message.author.username;
   const cleanedMessage = toCamelCase(message.content);
 
-  const reply = `✅ ${username} committed: ${cleanedMessage}`;
+  const reply = `✅ ${username} dropped a lil mimmit: \`${cleanedMessage}\``;
 
   try {
     await message.delete();
