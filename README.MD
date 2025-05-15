@@ -31,7 +31,7 @@ The bot replies with:
 
 To use the bot in your server:
 
-1. Add the bot to your server.
+1. [Add the bot](https://discord.com/oauth2/authorize?client_id=1372387773062844436&scope=bot&permissions=345152) to your server.
 2. Go to the **channel settings**.
 3. Under **Permissions**, add the bot under **Roles/Members**.
 4. Toggle **✅ Send Messages** and **✅ Manage Messages** for that channel.
