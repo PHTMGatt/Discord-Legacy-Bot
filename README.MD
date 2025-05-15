@@ -1,7 +1,9 @@
 # 🍼 Commit Formatter Bot
 
+[➕ Invite Commit Formatter Bot](https://discord.com/oauth2/authorize?client_id=1372387773062844436&scope=bot&permissions=345152)
+
 <p align="center">
-  <img src="./DISCORD-BOT.avif" alt="Bot Face" width="180" />
+  <img src="./images/DISCORD-BOT.avif" alt="Bot Face" width="180" />
 </p>
 
 <p align="center">
@@ -22,30 +24,33 @@ readme
 The bot replies with:
 
 ```
-✅ [Bryen] added a [readme]
+✅ [Bryen] dropped a lil mimmit: `Readme`
 ```
 
 ---
 
-## 🚀 Usage
+## ▶️ Usage Demo
 
-1. Invite the bot to your server (see below)  
-2. Go to a channel you want it active in  
-3. Click **Edit Channel → Permissions**  
-4. Under **Roles/Members**, add the bot  
-5. Enable ✅ **Send Messages**  
-6. Type any commit-like message — it’ll delete yours and post a cleaned version
+https://github.com/your-repo-path/blob/main/images/BotUsage.mp4  
+Or open the video manually in `/images/BotUsage.mp4`.
 
 ---
 
-## 🌐 Render
+## 🌐 Live App
 
 🔗 [https://discord-bot-1-e79s.onrender.com](https://discord-bot-1-e79s.onrender.com)
 
 ---
 
-### 🛠 Add the Bot to Your Server
-[➕ Invite Commit Formatter Bot](https://discord.com/oauth2/authorize?client_id=1372387773062844436&scope=bot&permissions=345152)
+## 🛠 How to Use
+
+1. [Add the bot](https://discord.com/oauth2/authorize?client_id=1372387773062844436&scope=bot&permissions=345152) to your server.
+2. Go to **Edit Channel** → **Permissions**
+3. Add **Commit Formatter Bot** under Roles/Members
+4. Enable:
+   - ✅ `Send Messages`
+   - ✅ `Manage Messages`
+5. That’s it! Now type in that channel and the bot will respond.
 
 ---
 
