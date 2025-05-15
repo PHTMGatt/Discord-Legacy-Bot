@@ -23,29 +23,29 @@ client.once('ready', () => {
   console.log(`✅ Bot is live as ${client.user.tag}`);
 });
 
-// #Note - CamelCase converter for clean output
+// #Note - Strict CamelCase formatting
 function toCamelCase(input) {
   return input
     .toLowerCase()
+    .replace(/[^a-zA-Z0-9 ]/g, '')
     .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word, i) => i === 0
+      ? word.charAt(0).toUpperCase() + word.slice(1)
+      : word.charAt(0).toUpperCase() + word.slice(1))
     .join('');
 }
 
 client.on('messageCreate', (message) => {
-  // #Note - Ignore bot’s own messages
   if (message.author.bot) return;
 
   const username = message.member?.displayName || message.author.username;
   const cleaned = toCamelCase(message.content);
 
-  const reply = `✅ ${username} pushed: ${cleaned}`;
+  const reply = `✅ ${username} committed: ${cleaned}`;
 
-  // #Note - Delete user message, then send formatted bot reply
   message.delete()
     .then(() => message.channel.send(reply))
     .catch(console.error);
 });
 
-// #Note - Start the bot using the token from .env
 client.login(process.env.DISCORD_TOKEN);
