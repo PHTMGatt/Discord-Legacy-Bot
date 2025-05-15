@@ -23,21 +23,29 @@ client.once('ready', () => {
   console.log(`✅ Bot is live as ${client.user.tag}`);
 });
 
-// #Note - Convert user message to cleaner format
-function simplifyMessage(raw) {
-  const cleaned = raw.toLowerCase().trim();
-  const words = cleaned.split(" ");
-  return words.slice(0, 5).join(" "); // Limit to first 5 words
+// #Note - CamelCase converter for clean output
+function toCamelCase(input) {
+  return input
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
 }
 
 client.on('messageCreate', (message) => {
+  // #Note - Ignore bot’s own messages
   if (message.author.bot) return;
 
   const username = message.member?.displayName || message.author.username;
-  const shortMessage = simplifyMessage(message.content);
+  const cleaned = toCamelCase(message.content);
 
-  const reply = `✅ ${username} pushed: "${shortMessage}"`;
-  message.channel.send(reply);
+  const reply = `✅ ${username} pushed: ${cleaned}`;
+
+  // #Note - Delete user message, then send formatted bot reply
+  message.delete()
+    .then(() => message.channel.send(reply))
+    .catch(console.error);
 });
 
+// #Note - Start the bot using the token from .env
 client.login(process.env.DISCORD_TOKEN);
