@@ -33,14 +33,14 @@ function toCamelCase(input) {
     .join('');
 }
 
-// #Note - Only respond in approved channels
-const allowedChannelIds = new Set();
-
+// #Note - Only respond in approved channels (those where bot has "Send Messages")
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
-  // #Note - Ignore messages from disallowed channels
-  if (!allowedChannelIds.has(message.channel.id)) return;
+  const permissions = message.channel.permissionsFor(message.guild.members.me);
+
+  // #Note - Ignore if bot doesn't have permission to send messages in this channel
+  if (!permissions || !permissions.has('SendMessages')) return;
 
   const username = message.member?.displayName || message.author.username;
   const cleanedMessage = toCamelCase(message.content);
