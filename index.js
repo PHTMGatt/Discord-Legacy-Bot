@@ -33,23 +33,25 @@ function toCamelCase(input) {
     .join('');
 }
 
-// #Note - Only respond in approved channels (those where bot has "Send Messages")
+// #Note - Only respond in explicitly authorized channels
 client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
-  if (!message.guild) return; // Ignore DMs
+  if (message.author.bot || !message.guild) return;
 
   const botMember = await message.guild.members.fetchMe();
-  const botPermissions = message.channel.permissionsFor(botMember);
 
-  if (!botPermissions || !botPermissions.has('SendMessages')) return;
+  // Check for explicit permission overwrite in this channel
+  const channelOverwrites = message.channel.permissionOverwrites.cache;
+  const botOverwrite = channelOverwrites.get(botMember.id);
+
+  // Only respond if explicitly granted SendMessages in this channel
+  if (!botOverwrite || !botOverwrite.allow.has('SendMessages')) return;
 
   const username = message.member?.displayName || message.author.username;
   const cleanedMessage = toCamelCase(message.content);
-
   const reply = `✅ ${username} committed: \`${cleanedMessage}\``;
 
   try {
-    if (botPermissions.has('ManageMessages')) {
+    if (botOverwrite.allow.has('ManageMessages')) {
       await message.delete();
     }
     await message.channel.send(reply);
