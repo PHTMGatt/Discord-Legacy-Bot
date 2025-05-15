@@ -23,15 +23,13 @@ client.once('ready', () => {
   console.log(`✅ Bot is live as ${client.user.tag}`);
 });
 
-// #Note - Strict CamelCase formatting
+// #Note - Convert message to CamelCase
 function toCamelCase(input) {
   return input
     .toLowerCase()
     .replace(/[^a-zA-Z0-9 ]/g, '')
     .split(' ')
-    .map((word, i) => i === 0
-      ? word.charAt(0).toUpperCase() + word.slice(1)
-      : word.charAt(0).toUpperCase() + word.slice(1))
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join('');
 }
 
@@ -39,21 +37,17 @@ client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
   const username = message.member?.displayName || message.author.username;
+  const cleanedMessage = toCamelCase(message.content);
 
-  // Convert to strict CamelCase
-  const cleaned = message.content
-    .toLowerCase()
-    .replace(/[^a-zA-Z0-9 ]/g, '')
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join('');
-
-  const reply = `✅ ${username} committed: ${cleaned}`;
+  const reply = `✅ ${username} committed: ${cleanedMessage}`;
 
   try {
     await message.delete();
     await message.channel.send(reply);
-  } catch (err) {
-    console.error('❌ Failed to delete or send message:', err);
+  } catch (error) {
+    console.error('❌ Failed to delete or respond:', error);
   }
 });
+
+// #Note - Start the bot using the token from .env
+client.login(process.env.DISCORD_TOKEN);
