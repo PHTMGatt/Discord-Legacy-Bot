@@ -29,12 +29,12 @@ The bot replies with:
 
 ## 🚀 Usage
 
-1. Invite the bot to your server  
-2. Type a commit message (e.g. `fixed bug in login`)  
-3. The bot will:
-   - Delete your message
-   - Reply with a clean CamelCase version  
-   - Example: `✅ Bryen committed: FixedBugInLogin`
+1. Invite the bot to your server (see below)  
+2. Go to a channel you want it active in  
+3. Click **Edit Channel → Permissions**  
+4. Under **Roles/Members**, add the bot  
+5. Enable ✅ **Send Messages**  
+6. Type any commit-like message — it’ll delete yours and post a cleaned version
 
 ---
 
