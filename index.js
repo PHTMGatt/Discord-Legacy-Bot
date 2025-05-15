@@ -62,3 +62,5 @@ client.on('messageCreate', async (message) => {
 
 // #Note - Start the bot using the token from .env
 client.login(process.env.DISCORD_TOKEN);
+
+// #Note - Handle errors
