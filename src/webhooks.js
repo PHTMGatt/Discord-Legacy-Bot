@@ -2,6 +2,7 @@
 
 // NOTE; this module sets up a single /github-webhook endpoint
 //       and handles all incoming “push” events from any GitHub repo
+const express = require("express");
 const { Webhooks } = require("@octokit/webhooks");
 const { Configuration, OpenAIApi } = require("openai");
 
@@ -46,22 +47,29 @@ module.exports = function registerWebhooks(app, client) {
 
     // ------------------------------------------------------------------------
     // NOTE; Express POST endpoint: GitHub will send push events here
-    app.post("/github-webhook", async (req, res) => {
-        console.log("🔑 Using secret:", process.env.GITHUB_WEBHOOK_SECRET);
-        console.log("📥 Received signature:", req.headers["x-hub-signature-256"]);
-        try {
-            await webhooks.verifyAndReceive({
-                id: req.headers["x-github-delivery"],
-                name: req.headers["x-github-event"],
-                payload: req.body,
-                signature: req.headers["x-hub-signature-256"],
-            });
-            res.sendStatus(200);
-        } catch (err) {
-            console.error("❌ Webhook verification failed:", err);
-            return res.sendStatus(401);
+    //       use raw body so HMAC checks match exactly
+    app.post(
+        "/github-webhook",
+        express.raw({ type: "application/json" }),
+        async (req, res) => {
+            console.log("🔑 Using secret:", process.env.GITHUB_WEBHOOK_SECRET);
+            console.log("📥 Received signature:", req.headers["x-hub-signature-256"]);
+
+            try {
+                await webhooks.verifyAndReceive({
+                    id: req.headers["x-github-delivery"],
+                    name: req.headers["x-github-event"],
+                    // NOTE; parse the raw buffer into JSON for Octokit
+                    payload: JSON.parse(req.body.toString()),
+                    signature: req.headers["x-hub-signature-256"],
+                });
+                res.sendStatus(200);
+            } catch (err) {
+                console.error("❌ Webhook verification failed:", err);
+                return res.sendStatus(401);
+            }
         }
-    });
+    );
 
     // ------------------------------------------------------------------------
     // NOTE; Listen for “push” events from any repo
