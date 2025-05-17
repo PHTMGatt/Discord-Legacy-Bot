@@ -1,7 +1,5 @@
 // src/webhooks.js
 
-// NOTE; this module sets up a single /github-webhook endpoint
-//       and handles all incoming “push” events from any GitHub repo
 const express = require("express");
 const { Webhooks } = require("@octokit/webhooks");
 const { Configuration, OpenAIApi } = require("openai");
@@ -34,12 +32,12 @@ async function cleanWithChatGPT(rawMessage) {
   );
 }
 
-module.exports = function registerWebhooks(app) {
-  const webhooks = new Webhooks({
-    secret: process.env.GITHUB_WEBHOOK_SECRET,
-  });
+const webhooks = new Webhooks({
+  secret: process.env.GITHUB_WEBHOOK_SECRET,
+});
 
-  // Route must use raw body for signature check
+// NOTE; Route must use raw buffer middleware BEFORE body-parser
+module.exports = function registerWebhooks(app) {
   app.post(
     "/github-webhook",
     express.raw({ type: "application/json" }),
@@ -54,11 +52,39 @@ module.exports = function registerWebhooks(app) {
         res.sendStatus(200);
       } catch (err) {
         console.error("❌ Webhook verification failed:", err.message);
-        return res.sendStatus(401);
+        res.sendStatus(401);
       }
     }
   );
+};
 
-  // Store for dispatcher
-  app.set("webhook-handler", webhooks);
+// Allow injecting Discord client after bot is ready
+module.exports.setWebhookHandler = function (client) {
+  webhooks.on("push", async ({ payload }) => {
+    try {
+      for (const guild of client.guilds.cache.values()) {
+        const botMember = await guild.members.fetchMe();
+
+        for (const channel of guild.channels.cache.values()) {
+          if (!channel.isTextBased()) continue;
+
+          const perms = channel.permissionOverwrites.cache.get(botMember.id);
+          if (!perms?.allow.has("SendMessages")) continue;
+
+          const lines = await Promise.all(
+            payload.commits.map(async (c) => {
+              const sha = c.id.slice(0, 7);
+              const cleaned = await cleanWithChatGPT(c.message);
+              const author = c.author.username || c.author.name || "unknown";
+              return `🔨 **${author}** pushed [\`${sha}\`](${c.url}): \`${cleaned}\``;
+            })
+          );
+
+          await channel.send(lines.join("\n"));
+        }
+      }
+    } catch (err) {
+      console.error("❌ Error handling push event:", err.message);
+    }
+  });
 };

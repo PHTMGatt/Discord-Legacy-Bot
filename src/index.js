@@ -6,10 +6,15 @@ const app = express();
 require("dotenv").config();
 
 // -------------------------------------------------------------------------------------
+// NOTE; webhook route uses express.raw — so we must register it BEFORE body-parser
+require("./webhooks")(app); // <-- must be first
+
+// -------------------------------------------------------------------------------------
 // NOTE; HTTP keep-alive endpoint — GitHub and health checks can hit this
 app.get("/", (req, res) => res.send("✅ Bot is alive!"));
 
-// NOTE; bodyParser is needed for Discord messages (not webhooks anymore)
+// -------------------------------------------------------------------------------------
+// Register body parser AFTER webhook route
 const bodyParser = require("body-parser");
 app.use(bodyParser.json());
 
@@ -28,13 +33,12 @@ client.once("ready", () => {
   console.log(`✅ Discord bot logged in as ${client.user.tag}`);
 });
 
-// -------------------------------------------------------------------------------------
-// NOTE; import & register GitHub webhook handlers (now using Express router)
-const { router: webhookRouter } = require("./webhooks")(client);
-app.use(webhookRouter);
+// Register webhook listener with bot access
+const { setWebhookHandler } = require("./webhooks");
+setWebhookHandler(client);
 
 // -------------------------------------------------------------------------------------
-// NOTE; start Express + Discord login
+// Start server + Discord login
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🌐 Web server listening on port ${PORT}`));
 client.login(process.env.DISCORD_TOKEN);
