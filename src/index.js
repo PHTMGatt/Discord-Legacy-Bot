@@ -9,10 +9,6 @@ require("dotenv").config();
 // NOTE; HTTP keep-alive endpoint — GitHub and health checks can hit this
 app.get("/", (req, res) => res.send("✅ Bot is alive!"));
 
-// NOTE; bodyParser is needed by webhooks.js, so register globally
-const bodyParser = require("body-parser");
-app.use(bodyParser.json());
-
 // -------------------------------------------------------------------------------------
 // Discord.js client setup
 const { Client, GatewayIntentBits } = require("discord.js");
