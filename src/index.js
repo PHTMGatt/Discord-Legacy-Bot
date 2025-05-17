@@ -2,7 +2,7 @@
 const express = require("express");
 const app = express();
 
-// # Load .env variables (DISCORD_TOKEN, GITHUB_WEBHOOK_SECRET, OPENAI_API_KEY, DISCORD_CHANNEL_ID)
+// # Load .env variables (DISCORD_TOKEN, GITHUB_WEBHOOK_SECRET, OPENAI_API_KEY)
 require("dotenv").config();
 
 // -------------------------------------------------------------------------------------
