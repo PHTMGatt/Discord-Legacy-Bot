@@ -1,7 +1,7 @@
-# 🍼 Commit Formatter Bot
+# 🍼 Commit Formatter Bot (Legacy Mode)
 
 <p align="center">
-  <img src="./images/DISCORD-BOT.avif" alt="Bot Face" width="180" />
+  <img src="./images/LegacyDCB.png" alt="Bot Face" width="180" />
 </p>
 
 <p align="center">
@@ -27,14 +27,16 @@ The bot replies with:
 
 ---
 
-## 🛠 Usage
+## 🛠 Setup & Usage
 
-1. [Add the bot](https://discord.com/oauth2/authorize?client_id=1372387773062844436&scope=bot&permissions=345152) to your server.
-2. Go to the **channel settings**.
-3. Under **Permissions**, add the bot under **Roles/Members**.
-4. Toggle **✅ Send Messages** and **✅ Manage Messages** for that channel.
+1. [Add the bot to your server](https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID_HERE&scope=bot&permissions=355328)
+2. Go to the **channel settings** where you want the bot active
+3. Under **Permissions**, add the bot to **Roles/Members**
+4. Enable:
+   - ✅ **Send Messages**
+   - ✅ **Manage Messages**
 
-> Now the bot will only work in the channels you approve!
+> ✅ The bot will only respond in approved channels
 
 ---
 
@@ -48,7 +50,9 @@ The bot replies with:
 
 ## 🌐 Hosted on Render
 
-> `https://discord-bot-1-e79s.onrender.com`
+> `https://your-render-url.onrender.com`
+
+> 🔁 Set as a **Background Worker** if you want it running 24/7!
 
 ---
 

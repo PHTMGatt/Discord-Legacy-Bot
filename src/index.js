@@ -1,16 +1,16 @@
-// #Note - Express keeps Render's free instance from sleeping
+// NOTE; Express keeps the bot alive on Render if needed
 const express = require('express');
 const app = express();
 
 app.get('/', (req, res) => res.send('Bot is alive!'));
 app.listen(3000, () => console.log('🌐 Web server running on port 3000'));
 
-// #Note - Load environment variables like DISCORD_TOKEN from .env file
+// NOTE; Load environment variables like DISCORD_TOKEN_LEGACY from .env
 require('dotenv').config();
 
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 
-// #Note - Intents required for reading messages
+// NOTE; Initialize Discord client with necessary intents
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -19,11 +19,12 @@ const client = new Client({
   ]
 });
 
+// NOTE; Log when bot is ready
 client.once('ready', () => {
   console.log(`✅ Bot is live as ${client.user.tag}`);
 });
 
-// #Note - Convert message to CamelCase
+// NOTE; Convert any message to CamelCase
 function toCamelCase(input) {
   return input
     .toLowerCase()
@@ -33,35 +34,31 @@ function toCamelCase(input) {
     .join('');
 }
 
-// #Note - Only respond in explicitly authorized channels
+// NOTE; Handle incoming messages
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.guild) return;
 
-  const botMember = await message.guild.members.fetchMe();
-
-  // Check for explicit permission overwrite in this channel
-  const channelOverwrites = message.channel.permissionOverwrites.cache;
-  const botOverwrite = channelOverwrites.get(botMember.id);
-
-  // Only respond if explicitly granted SendMessages in this channel
-  if (!botOverwrite || !botOverwrite.allow.has('SendMessages')) return;
-
-  const username = message.member?.displayName || message.author.username;
-  const cleanedMessage = toCamelCase(message.content);
-  const reply = `✅ ${username} committed: \`${cleanedMessage}\``;
-
   try {
-    if (botOverwrite.allow.has('ManageMessages')) {
+    const botMember = await message.guild.members.fetchMe();
+    const channelOverwrites = message.channel.permissionOverwrites.cache;
+    const botOverwrite = channelOverwrites.get(botMember.id);
+
+    // NOTE; Only respond if bot has explicit SendMessages permission
+    if (!botOverwrite || !botOverwrite.allow.has(PermissionsBitField.Flags.SendMessages)) return;
+
+    const username = message.member?.displayName || message.author.username;
+    const cleanedMessage = toCamelCase(message.content);
+    const reply = `✅ ${username} committed: \`${cleanedMessage}\``;
+
+    if (botOverwrite.allow.has(PermissionsBitField.Flags.ManageMessages)) {
       await message.delete();
     }
+
     await message.channel.send(reply);
   } catch (error) {
-    console.error('❌ Failed to delete or respond:', error);
+    console.error('❌ Error handling message:', error);
   }
 });
 
-// #Note - Start the bot using the token from .env
-client.login(process.env.DISCORD_TOKEN);
-
-// NOTE; register the Discord bot with webhook handler
-webhookMiddleware.setClient(client);
+// NOTE; Log in using bot token from .env
+client.login(process.env.DISCORD_TOKEN_LEGACY);
