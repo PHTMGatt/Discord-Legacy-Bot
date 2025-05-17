@@ -1,7 +1,6 @@
 // src/webhooks.js
 
-const express = require("express");
-const { Webhooks } = require("@octokit/webhooks");
+const { Webhooks, createNodeMiddleware } = require("@octokit/webhooks");
 const { Configuration, OpenAIApi } = require("openai");
 
 // NOTE; Camel-case fallback for commit messages
@@ -16,10 +15,9 @@ function toCamelCase(input) {
 
 // NOTE; ChatGPT cleaner — rewrites raw commit messages to be more readable
 async function cleanWithChatGPT(rawMessage) {
-  const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-  const openai = new OpenAIApi(configuration);
+  const openai = new OpenAIApi(
+    new Configuration({ apiKey: process.env.OPENAI_API_KEY })
+  );
   const prompt = `Rewrite this Git commit message to be short, clear, and presentable for Discord:\n\n"${rawMessage}"`;
   const response = await openai.createChatCompletion({
     model: "gpt-3.5-turbo",
@@ -33,31 +31,20 @@ async function cleanWithChatGPT(rawMessage) {
 }
 
 module.exports = function registerWebhooks(app, client) {
+  // NOTE; configure GitHub webhook verifier + middleware
   const webhooks = new Webhooks({
     secret: process.env.GITHUB_WEBHOOK_SECRET,
   });
 
-  app.post(
+  // ------------------------------------------------------------------------
+  // NOTE; mount Octokit’s built-in middleware at /github-webhook
+  app.use(
     "/github-webhook",
-    express.raw({ type: "application/json" }),
-    async (req, res) => {
-      console.log("🔑 Using secret:", process.env.GITHUB_WEBHOOK_SECRET);
-      console.log("📥 Received signature:", req.headers["x-hub-signature-256"]);
-      try {
-        await webhooks.verifyAndReceive({
-          id: req.headers["x-github-delivery"],
-          name: req.headers["x-github-event"],
-          payload: JSON.parse(req.body.toString()),
-          signature: req.headers["x-hub-signature-256"],
-        });
-        res.sendStatus(200);
-      } catch (err) {
-        console.error("❌ Webhook verification failed:", err);
-        return res.sendStatus(401);
-      }
-    }
+    createNodeMiddleware(webhooks, { path: "/github-webhook" })
   );
 
+  // ------------------------------------------------------------------------
+  // NOTE; Listen for “push” events from any repo
   webhooks.on("push", async ({ payload }) => {
     try {
       for (const guild of client.guilds.cache.values()) {
@@ -67,6 +54,7 @@ module.exports = function registerWebhooks(app, client) {
           const overwrite = channel.permissionOverwrites.cache.get(botMember.id);
           if (!overwrite?.allow.has("SendMessages")) continue;
 
+          // NOTE; format each commit line, cleaning via ChatGPT
           const lines = await Promise.all(
             payload.commits.map(async (c) => {
               const sha = c.id.slice(0, 7);
@@ -75,6 +63,7 @@ module.exports = function registerWebhooks(app, client) {
               return `🔨 **${author}** pushed [\`${sha}\`](${c.url}): \`${cleaned}\``;
             })
           );
+          // NOTE; send the batched commit messages to this channel
           await channel.send(lines.join("\n"));
         }
       }

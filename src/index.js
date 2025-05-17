@@ -1,5 +1,3 @@
-// src/index.js
-
 // NOTE; keep the free Render dyno awake by responding on “/”
 const express = require("express");
 const app = express();
@@ -8,8 +6,8 @@ const app = express();
 require("dotenv").config();
 
 // -------------------------------------------------------------------------------------
-// NOTE; HTTP keep-alive endpoint — GitHub and health checks can hit this
-app.get("/", (req, res) => res.send("✅ Bot is alive!"));
+// NOTE; HTTP keep-alive endpoint — health checks can hit this
+app.get("/", (_req, res) => res.send("✅ Bot is alive!"));
 
 // -------------------------------------------------------------------------------------
 // Discord.js client setup
@@ -21,13 +19,13 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
   ],
 });
-
 client.once("ready", () => {
   console.log(`✅ Discord bot logged in as ${client.user.tag}`);
 });
 
 // -------------------------------------------------------------------------------------
 // NOTE; import & register GitHub webhook handlers
+//       this also mounts the middleware that verifies signature
 require("./webhooks")(app, client);
 
 // -------------------------------------------------------------------------------------
