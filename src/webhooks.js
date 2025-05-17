@@ -1,9 +1,10 @@
-// src/webhooks.js
-
+// NOTE; this module sets up a single /github-webhook endpoint
+//       and handles all incoming “push” events from any GitHub repo
 const express = require("express");
 const { Webhooks } = require("@octokit/webhooks");
 const { Configuration, OpenAIApi } = require("openai");
 
+// NOTE; Camel-case fallback for commit messages
 function toCamelCase(input) {
   return input
     .toLowerCase()
@@ -13,13 +14,14 @@ function toCamelCase(input) {
     .join("");
 }
 
+// NOTE; ChatGPT cleaner — rewrites raw commit messages to be more readable
 async function cleanWithChatGPT(rawMessage) {
   const configuration = new Configuration({
     apiKey: process.env.OPENAI_API_KEY,
   });
   const openai = new OpenAIApi(configuration);
-
   const prompt = `Rewrite this Git commit message to be short, clear, and presentable for Discord:\n\n"${rawMessage}"`;
+
   const response = await openai.createChatCompletion({
     model: "gpt-3.5-turbo",
     messages: [{ role: "user", content: prompt }],
@@ -32,12 +34,12 @@ async function cleanWithChatGPT(rawMessage) {
   );
 }
 
-const webhooks = new Webhooks({
-  secret: process.env.GITHUB_WEBHOOK_SECRET,
-});
+module.exports = function registerWebhooks(app, client) {
+  const webhooks = new Webhooks({
+    secret: process.env.GITHUB_WEBHOOK_SECRET,
+  });
 
-// NOTE; Route must use raw buffer middleware BEFORE body-parser
-module.exports = function registerWebhooks(app) {
+  // NOTE; Express POST endpoint with raw body parser (needed for signature match)
   app.post(
     "/github-webhook",
     express.raw({ type: "application/json" }),
@@ -46,20 +48,18 @@ module.exports = function registerWebhooks(app) {
         await webhooks.verifyAndReceive({
           id: req.headers["x-github-delivery"],
           name: req.headers["x-github-event"],
-          signature: req.headers["x-hub-signature-256"],
           payload: JSON.parse(req.body.toString()),
+          signature: req.headers["x-hub-signature-256"],
         });
         res.sendStatus(200);
       } catch (err) {
-        console.error("❌ Webhook verification failed:", err.message);
+        console.error("❌ Webhook verification failed:", err);
         res.sendStatus(401);
       }
     }
   );
-};
 
-// Allow injecting Discord client after bot is ready
-module.exports.setWebhookHandler = function (client) {
+  // NOTE; Listen for push events from any repo
   webhooks.on("push", async ({ payload }) => {
     try {
       for (const guild of client.guilds.cache.values()) {
@@ -84,7 +84,7 @@ module.exports.setWebhookHandler = function (client) {
         }
       }
     } catch (err) {
-      console.error("❌ Error handling push event:", err.message);
+      console.error("❌ Error handling push event:", err);
     }
   });
 };
