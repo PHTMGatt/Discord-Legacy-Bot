@@ -1,9 +1,8 @@
 // src/webhooks.js
-
 const { Webhooks, createNodeMiddleware } = require("@octokit/webhooks");
 const { Configuration, OpenAIApi } = require("openai");
 
-// NOTE; fallback for commit messages
+// NOTE; fallback message formatter
 function toCamelCase(input) {
   return input
     .toLowerCase()
@@ -13,13 +12,14 @@ function toCamelCase(input) {
     .join("");
 }
 
-// NOTE; use OpenAI to clean commit messages
+// NOTE; clean commit messages via OpenAI GPT
 async function cleanWithChatGPT(rawMessage) {
   const openai = new OpenAIApi(
     new Configuration({ apiKey: process.env.OPENAI_API_KEY })
   );
 
   const prompt = `Rewrite this Git commit message to be short, clear, and presentable for Discord:\n\n"${rawMessage}"`;
+
   const response = await openai.createChatCompletion({
     model: "gpt-3.5-turbo",
     messages: [{ role: "user", content: prompt }],
@@ -32,13 +32,12 @@ async function cleanWithChatGPT(rawMessage) {
   );
 }
 
-// Export the webhook + register handler
 module.exports = function registerWebhooks(app, client) {
   const webhooks = new Webhooks({
     secret: process.env.GITHUB_WEBHOOK_SECRET,
   });
 
-  // ✅ DO NOT use express.raw or express.json here!
+  // ✅ use Octokit's middleware — no manual parsing!
   app.use(
     "/github-webhook",
     createNodeMiddleware(webhooks, { path: "/github-webhook" })
@@ -52,8 +51,8 @@ module.exports = function registerWebhooks(app, client) {
         for (const channel of guild.channels.cache.values()) {
           if (!channel.isTextBased()) continue;
 
-          const overwrite = channel.permissionOverwrites.cache.get(botMember.id);
-          if (!overwrite?.allow.has("SendMessages")) continue;
+          const perms = channel.permissionOverwrites.cache.get(botMember.id);
+          if (!perms?.allow.has("SendMessages")) continue;
 
           const lines = await Promise.all(
             payload.commits.map(async (c) => {
