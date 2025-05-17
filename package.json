@@ -1,16 +1,20 @@
 {
   "name": "discord-local-bot",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node index.js",
-    "build": "echo 'no build step needed'",
-    "render-build": "npm install && npm run build"
+    "start": "node src/index.js",
+    "build": "echo \"no build step needed\"",
+    "render-build": "npm install && npm run build",
+    "restart": "npm stop --if-present && npm start"
   },
   "dependencies": {
+    "@octokit/webhooks": "^13.9.0",
+    "body-parser": "^2.2.0",
     "discord-local-bot": "file:",
     "discord.js": "^14.11.0",
     "dotenv": "^16.3.1",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "openai": "^4.100.0"
   }
 }
