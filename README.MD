@@ -29,7 +29,7 @@ The bot replies with:
 
 ## 🛠 Setup & Usage
 
-1. [Add the bot to your server](https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID_HERE&scope=bot&permissions=355328)
+1. [Add the bot to your server](https://discord.com/oauth2/authorize?client_id=1372387773062844436&scope=bot&permissions=81920)
 2. Go to the **channel settings** where you want the bot active
 3. Under **Permissions**, add the bot to **Roles/Members**
 4. Enable:
