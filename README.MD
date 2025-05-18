@@ -38,7 +38,7 @@ The bot replies:
 
 ## 🚀 Setup Instructions
 
-1. [Invite the Bot to Your Server](https://discord.com/oauth2/authorize?client_id=1373518288159506442&scope=bot&permissions=137976202304)
+1. [Invite the Bot to Your Server](https://discord.com/oauth2/authorize?client_id=1373518288159506442&scope=bot&permissions=0)
 2. Navigate to your target **channel settings**
 3. Under **Permissions**, add the bot to **Roles/Members**
 4. Enable the following permissions:
