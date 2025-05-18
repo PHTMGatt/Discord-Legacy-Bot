@@ -1,9 +1,9 @@
 {
   "name": "discord-legacy-bot",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node src/index.js",
     "build": "echo \"no build step needed\"",
     "render-build": "npm install && npm run build",
     "restart": "npm stop --if-present && npm start"
