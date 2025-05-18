@@ -40,18 +40,18 @@ client.on('messageCreate', async (message) => {
 
   try {
     const botMember = await message.guild.members.fetchMe();
-    const channelOverwrites = message.channel.permissionOverwrites.cache;
-    const botOverwrite = channelOverwrites.get(botMember.id);
+    const permissions = message.channel.permissionsFor(botMember);
 
-    // NOTE; Only respond if bot has explicit SendMessages permission
-    if (!botOverwrite || !botOverwrite.allow.has(PermissionsBitField.Flags.SendMessages)) return;
+    // NOTE; Check bot has channel-level SendMessages permission
+    if (!permissions || !permissions.has(PermissionsBitField.Flags.SendMessages)) return;
 
     const username = message.member?.displayName || message.author.username;
     const cleanedMessage = toCamelCase(message.content);
     const reply = `✅ ${username} committed: \`${cleanedMessage}\``;
 
-    if (botOverwrite.allow.has(PermissionsBitField.Flags.ManageMessages)) {
-      await message.delete();
+    // NOTE; Delete original if bot can manage messages
+    if (permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+      await message.delete().catch(() => {});
     }
 
     await message.channel.send(reply);
