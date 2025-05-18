@@ -12,6 +12,7 @@
     "discord-legacy-bot": "file:",
     "discord.js": "^14.11.0",
     "dotenv": "^16.3.1",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "node-fetch": "^3.3.2"
   }
 }
