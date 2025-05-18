@@ -61,7 +61,7 @@ The bot replies:
 
 Hosted on Render:  
 ```
-https://discord-webhook-bot-1f23.onrender.com
+https://discord-legacy-bot.onrender.com
 ```
 
 - 🔁 Run as a **Background Worker** for continuous uptime
