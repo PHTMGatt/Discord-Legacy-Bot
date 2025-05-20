@@ -31,16 +31,26 @@ client.once('ready', () => {
   console.log(`✅ Bot is live as ${client.user.tag}`);
 });
 
-// NOTE: Convert any incoming message into Sentence case with spaces
+// NOTE: Convert any incoming message into Sentence case with spaces and sentence boundaries
 function toSentenceCase(input) {
-  // 1) Replace non-alphanumerics with spaces
-  // 2) Insert spaces between lowercase→Uppercase transitions
-  // 3) Lowercase entire string, then uppercase only first character
-  const spaced = input
-    .replace(/[^a-zA-Z0-9]/g, ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2');
-  const lower = spaced.toLowerCase().trim();
-  return lower.charAt(0).toUpperCase() + lower.slice(1);
+  // 1) Preserve periods as sentence delimiters
+  // 2) Replace non-alphanumeric (except period) with spaces
+  // 3) Insert spaces between lowercase→Uppercase transitions
+  // 4) Collapse multiple spaces to a single space
+  // 5) Split on periods to get individual sentences
+  // 6) Lowercase each sentence, then uppercase only its first character
+  // 7) Rejoin with “. ” and ensure a trailing period
+  const preserved   = input.replace(/[^a-zA-Z0-9.]/g, ' ');
+  const spaced      = preserved.replace(/([a-z])([A-Z])/g, '$1 $2');
+  const collapsed   = spaced.replace(/\s+/g, ' ').trim();
+  const parts       = collapsed.split('.').map(p => p.trim()).filter(p => p.length > 0);
+  const sentences   = parts.map(p => {
+    const lower = p.toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  });
+  return sentences.length
+    ? sentences.join('. ') + '.'
+    : '';
 }
 
 // NOTE: Handle incoming messages
@@ -48,17 +58,21 @@ client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.guild) return;
 
   try {
-    const botMember = await message.guild.members.fetchMe();
+    const botMember   = await message.guild.members.fetchMe();
     const permissions = message.channel.permissionsFor(botMember);
 
     // ✅ STRICT: Only respond if bot can view and send in this channel
     if (!permissions?.has([PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages])) return;
 
-    const username = message.member?.displayName || message.author.username;
-    const cleanedMessage = toSentenceCase(message.content);
+    const username        = message.member?.displayName || message.author.username;
+    const cleanedMessage  = toSentenceCase(message.content);
 
     // ——— UPDATED FORMATTING ———
-    // Send a single, spaced‑out code block in its own message
+    // Delete original then send ONE code‑block message with sentence‑case text
+    if (permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+      await message.delete().catch(() => {});
+    }
+
     const reply = [
       `✅ ${username} committed:`,
       '',
@@ -67,12 +81,8 @@ client.on('messageCreate', async (message) => {
       '```'
     ].join('\n');
 
-    // Delete original message if bot has ManageMessages
-    if (permissions.has(PermissionsBitField.Flags.ManageMessages)) {
-      await message.delete().catch(() => {});
-    }
-
     await message.channel.send(reply);
+
   } catch (error) {
     console.error('❌ Error handling message:', error);
   }
