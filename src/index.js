@@ -82,14 +82,18 @@ client.on('messageCreate', async (message) => {
 
     if (!formatted || formatted.length < 2) return;
 
+    // NOTE; Normalize to prevent duplicate commits
+    const normalized = formatted.toLowerCase().replace(/\s+/g, ' ').trim();
     const channelId = message.channel.id;
-    if (lastCommitByChannel.get(channelId) === formatted) return;
-    lastCommitByChannel.set(channelId, formatted);
+    if (lastCommitByChannel.get(channelId) === normalized) return;
+    lastCommitByChannel.set(channelId, normalized);
 
+    // NOTE; Delete original message if allowed
     if (perms.has(PermissionsBitField.Flags.ManageMessages)) {
       await message.delete().catch(() => {});
     }
 
+    // NOTE; Send clean commit message
     const username = message.member?.displayName || message.author.username;
     const reply = [
       `✅ ${username} committed:`,
