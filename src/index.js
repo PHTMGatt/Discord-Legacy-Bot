@@ -8,17 +8,23 @@ const app = express();
 // NOTE; Serve static files from src/
 app.use(express.static(path.join(__dirname)));
 
-// NOTE; Route to styled status page
+// NOTE; Serve styled status page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// NOTE; Keep bot alive on Render
+// NOTE; Use assigned port from Render or default to 3000
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🌐 Web server running on port ${PORT}`);
+});
+
+// NOTE; Optional self-ping to prevent Render from sleeping
 setInterval(() => {
   fetch('https://discord-legacy-bot.onrender.com')
     .then(() => console.log('🔁 Self-ping successful'))
     .catch(() => console.log('⚠️ Self-ping failed'));
-}, 14 * 60 * 1000); // every 14 minutes
+}, 14 * 60 * 1000);
 
 const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 
@@ -31,10 +37,10 @@ const client = new Client({
   ]
 });
 
-// NOTE; Store last commit to prevent duplicates
+// NOTE; In-memory deduplication map
 const lastCommitByChannel = new Map();
 
-// NOTE; Format input into clean sentence case
+// NOTE; Convert commit text into clean sentence case
 function toSentenceCase(input) {
   const cleaned = input
     .replace(/[^a-zA-Z0-9.]/g, ' ')
@@ -57,12 +63,12 @@ function toSentenceCase(input) {
   return sentences.join('. ') + '.';
 }
 
-// NOTE; Bot ready log
+// NOTE; Log when bot is ready
 client.once('ready', () => {
   console.log(`✅ Bot is live as ${client.user.tag}`);
 });
 
-// NOTE; Listen for commit-style messages
+// NOTE; Handle commit-style messages
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.guild) return;
 
