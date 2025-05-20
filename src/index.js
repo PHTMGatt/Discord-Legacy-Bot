@@ -26,32 +26,48 @@ const client = new Client({
   ]
 });
 
+// NOTE: In‑memory cache to dedupe repeated commits per channel
+const lastCommitByChannel = new Map();
+
+// NOTE: Convert camel‑case input into one or two sentence‑case sentences
+function toSentenceCase(input) {
+  // 1) Replace non‑alphanumerics (except period) with spaces
+  // 2) Insert spaces between lowercase→Uppercase transitions
+  // 3) Collapse multiple spaces
+  // 4) Split into words
+  const cleaned     = input
+    .replace(/[^a-zA-Z0-9]/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const words       = cleaned.split(' ').map(w => w.toLowerCase());
+  // 5) Detect adjacent duplicate word to split into two sentences
+  const dupIndex    = words.findIndex((w,i) => i>0 && w === words[i-1]);
+  let sentencesArr;
+
+  if (dupIndex > 0) {
+    // split at the duplicate boundary
+    const first  = words.slice(0, dupIndex + 1);
+    const second = words.slice(dupIndex + 1);
+    sentencesArr = [ first, second ];
+  } else {
+    sentencesArr = [ words ];
+  }
+
+  // 6) Capitalize each sentence and rejoin
+  const sentences = sentencesArr.map(arr => {
+    const s = arr.join(' ');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  });
+
+  return sentences.join('. ') + '.';
+}
+
 // NOTE: Log when bot is ready
 client.once('ready', () => {
   console.log(`✅ Bot is live as ${client.user.tag}`);
 });
-
-// NOTE: Convert any incoming message into Sentence case with spaces and sentence boundaries
-function toSentenceCase(input) {
-  // 1) Preserve periods as sentence delimiters
-  // 2) Replace non-alphanumeric (except period) with spaces
-  // 3) Insert spaces between lowercase→Uppercase transitions
-  // 4) Collapse multiple spaces to a single space
-  // 5) Split on periods to get individual sentences
-  // 6) Lowercase each sentence, then uppercase only its first character
-  // 7) Rejoin with “. ” and ensure a trailing period
-  const preserved   = input.replace(/[^a-zA-Z0-9.]/g, ' ');
-  const spaced      = preserved.replace(/([a-z])([A-Z])/g, '$1 $2');
-  const collapsed   = spaced.replace(/\s+/g, ' ').trim();
-  const parts       = collapsed.split('.').map(p => p.trim()).filter(p => p.length > 0);
-  const sentences   = parts.map(p => {
-    const lower = p.toLowerCase();
-    return lower.charAt(0).toUpperCase() + lower.slice(1);
-  });
-  return sentences.length
-    ? sentences.join('. ') + '.'
-    : '';
-}
 
 // NOTE: Handle incoming messages
 client.on('messageCreate', async (message) => {
@@ -59,32 +75,38 @@ client.on('messageCreate', async (message) => {
 
   try {
     const botMember   = await message.guild.members.fetchMe();
-    const permissions = message.channel.permissionsFor(botMember);
+    const perms       = message.channel.permissionsFor(botMember);
+    if (!perms?.has([PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages])) return;
 
-    // ✅ STRICT: Only respond if bot can view and send in this channel
-    if (!permissions?.has([PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages])) return;
+    const raw         = message.content;
+    const cleaned     = toSentenceCase(raw);
+    const channelId   = message.channel.id;
 
-    const username        = message.member?.displayName || message.author.username;
-    const cleanedMessage  = toSentenceCase(message.content);
+    // nothing to do
+    if (!cleaned) return;
 
-    // ——— UPDATED FORMATTING ———
-    // Delete original then send ONE code‑block message with sentence‑case text
-    if (permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+    // dedupe: if same as last commit in this channel, ignore
+    if (lastCommitByChannel.get(channelId) === cleaned) return;
+    lastCommitByChannel.set(channelId, cleaned);
+
+    // delete the original if we can
+    if (perms.has(PermissionsBitField.Flags.ManageMessages)) {
       await message.delete().catch(() => {});
     }
 
+    // build a single code‑block reply
+    const username = message.member?.displayName || message.author.username;
     const reply = [
       `✅ ${username} committed:`,
       '',
       '```',
-      cleanedMessage,
+      cleaned,
       '```'
     ].join('\n');
 
     await message.channel.send(reply);
-
-  } catch (error) {
-    console.error('❌ Error handling message:', error);
+  } catch (err) {
+    console.error('❌ Error handling message:', err);
   }
 });
 
