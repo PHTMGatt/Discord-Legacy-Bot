@@ -13,13 +13,13 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// NOTE; Use assigned port from Render or default to 3000
+// NOTE; Use assigned port from Render or fallback to 3000
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🌐 Web server running on port ${PORT}`);
 });
 
-// NOTE; Optional self-ping to prevent Render from sleeping
+// NOTE; Keep bot alive on Render
 setInterval(() => {
   fetch('https://discord-legacy-bot.onrender.com')
     .then(() => console.log('🔁 Self-ping successful'))
@@ -37,10 +37,10 @@ const client = new Client({
   ]
 });
 
-// NOTE; In-memory deduplication map
-const lastCommitByChannel = new Map();
+// NOTE; Cache to prevent duplicates per channel
+const lastCommitByChannel = new Map(); // { channelId: { hash: string, timestamp: number } }
 
-// NOTE; Convert commit text into clean sentence case
+// NOTE; Format commit to sentence case and clean punctuation
 function toSentenceCase(input) {
   const cleaned = input
     .replace(/[^a-zA-Z0-9.]/g, ' ')
@@ -63,12 +63,20 @@ function toSentenceCase(input) {
   return sentences.join('. ') + '.';
 }
 
+// NOTE; Strict hash generator to normalize comparison
+function generateCommitHash(input) {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '') // remove spaces, punctuation, casing
+    .trim();
+}
+
 // NOTE; Log when bot is ready
 client.once('ready', () => {
   console.log(`✅ Bot is live as ${client.user.tag}`);
 });
 
-// NOTE; Handle commit-style messages
+// NOTE; Message handler
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.guild) return;
 
@@ -79,21 +87,22 @@ client.on('messageCreate', async (message) => {
 
     const raw = message.content;
     const formatted = toSentenceCase(raw).trim();
-
-    if (!formatted || formatted.length < 2) return;
-
-    // NOTE; Normalize to prevent duplicate commits
-    const normalized = formatted.toLowerCase().replace(/\s+/g, ' ').trim();
+    const hash = generateCommitHash(formatted);
     const channelId = message.channel.id;
-    if (lastCommitByChannel.get(channelId) === normalized) return;
-    lastCommitByChannel.set(channelId, normalized);
+    const now = Date.now();
 
-    // NOTE; Delete original message if allowed
+    // NOTE; Check last commit hash + cooldown window
+    const last = lastCommitByChannel.get(channelId);
+    if (last && last.hash === hash && now - last.timestamp < 30000) return;
+
+    // NOTE; Store new hash + time
+    lastCommitByChannel.set(channelId, { hash, timestamp: now });
+
+    // NOTE; Delete original if allowed
     if (perms.has(PermissionsBitField.Flags.ManageMessages)) {
       await message.delete().catch(() => {});
     }
 
-    // NOTE; Send clean commit message
     const username = message.member?.displayName || message.author.username;
     const reply = [
       `✅ ${username} committed:`,
@@ -108,5 +117,5 @@ client.on('messageCreate', async (message) => {
   }
 });
 
-// NOTE; Log in with bot token
+// NOTE; Log in using bot token
 client.login(process.env.DISCORD_TOKEN_LEGACY);
