@@ -31,14 +31,16 @@ client.once('ready', () => {
   console.log(`✅ Bot is live as ${client.user.tag}`);
 });
 
-// NOTE: Convert any message to CamelCase
-function toCamelCase(input) {
-  return input
-    .toLowerCase()
-    .replace(/[^a-zA-Z0-9 ]/g, '')
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join('');
+// NOTE: Convert any incoming message into Sentence case with spaces
+function toSentenceCase(input) {
+  // 1) Replace non-alphanumerics with spaces
+  // 2) Insert spaces between lowercase→Uppercase transitions
+  // 3) Lowercase entire string, then uppercase only first character
+  const spaced = input
+    .replace(/[^a-zA-Z0-9]/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2');
+  const lower = spaced.toLowerCase().trim();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
 }
 
 // NOTE: Handle incoming messages
@@ -53,8 +55,17 @@ client.on('messageCreate', async (message) => {
     if (!permissions?.has([PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages])) return;
 
     const username = message.member?.displayName || message.author.username;
-    const cleanedMessage = toCamelCase(message.content);
-    const reply = `✅ ${username} committed: \`${cleanedMessage}\``;
+    const cleanedMessage = toSentenceCase(message.content);
+
+    // ——— UPDATED FORMATTING ———
+    // Send a single, spaced‑out code block in its own message
+    const reply = [
+      `✅ ${username} committed:`,
+      '',
+      '```',
+      cleanedMessage,
+      '```'
+    ].join('\n');
 
     // Delete original message if bot has ManageMessages
     if (permissions.has(PermissionsBitField.Flags.ManageMessages)) {
