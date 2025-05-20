@@ -1,4 +1,4 @@
-/* style.css */
+/* src/style.css */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -7,15 +7,15 @@
 
 body {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   height: 100vh;
   background: linear-gradient(135deg, #1e3c72, #2a5298);
   font-family: 'Segoe UI', Tahoma, sans-serif;
 }
 
 h1 {
-  color: #ffffff;
+  color: white;
   font-size: 3.2rem;
   text-align: center;
   text-shadow: 0 0 12px rgba(255,255,255,0.8), 0 0 24px rgba(0,0,0,0.4);
@@ -24,7 +24,7 @@ h1 {
 
 @keyframes glow {
   from {
-    text-shadow: 0 0 10px rgba(255,255,255,0.7),
+    text-shadow: 0 0 10px rgba(255,255,255,0.6),
                  0 0 20px rgba(0,0,0,0.3);
   }
   to {

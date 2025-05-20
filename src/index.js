@@ -5,24 +5,24 @@ const express = require('express');
 const path = require('path');
 const app = express();
 
-// NOTE; Serve static files (index.html + style.css)
-app.use(express.static(__dirname));
+// NOTE; Serve static files from src/
+app.use(express.static(path.join(__dirname)));
 
-// NOTE; Serve styled “Bot is alive!” page
+// NOTE; Route to styled status page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// NOTE; Optional self-ping to prevent Render from sleeping (every 14 minutes)
+// NOTE; Keep bot alive on Render
 setInterval(() => {
   fetch('https://discord-legacy-bot.onrender.com')
     .then(() => console.log('🔁 Self-ping successful'))
     .catch(() => console.log('⚠️ Self-ping failed'));
-}, 14 * 60 * 1000);
+}, 14 * 60 * 1000); // every 14 minutes
 
 const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 
-// NOTE; Initialize Discord client with necessary intents
+// NOTE; Init Discord client
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -31,10 +31,10 @@ const client = new Client({
   ]
 });
 
-// NOTE; In-memory cache for deduplication
+// NOTE; Store last commit to prevent duplicates
 const lastCommitByChannel = new Map();
 
-// NOTE; Convert camelCase or messy input to clean sentence case
+// NOTE; Format input into clean sentence case
 function toSentenceCase(input) {
   const cleaned = input
     .replace(/[^a-zA-Z0-9.]/g, ' ')
@@ -57,12 +57,12 @@ function toSentenceCase(input) {
   return sentences.join('. ') + '.';
 }
 
-// NOTE; Bot ready
+// NOTE; Bot ready log
 client.once('ready', () => {
   console.log(`✅ Bot is live as ${client.user.tag}`);
 });
 
-// NOTE; Message listener
+// NOTE; Listen for commit-style messages
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.guild) return;
 
@@ -72,22 +72,18 @@ client.on('messageCreate', async (message) => {
     if (!perms?.has([PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages])) return;
 
     const raw = message.content;
-    const formatted = toSentenceCase(raw);
-    const cleaned = formatted.trim().toLowerCase();
+    const formatted = toSentenceCase(raw).trim();
 
-    if (!cleaned) return;
+    if (!formatted || formatted.length < 2) return;
 
-    // Deduplicate (ignore if identical)
     const channelId = message.channel.id;
-    if (lastCommitByChannel.get(channelId) === cleaned) return;
-    lastCommitByChannel.set(channelId, cleaned);
+    if (lastCommitByChannel.get(channelId) === formatted) return;
+    lastCommitByChannel.set(channelId, formatted);
 
-    // Delete original message if allowed
     if (perms.has(PermissionsBitField.Flags.ManageMessages)) {
       await message.delete().catch(() => {});
     }
 
-    // Send formatted commit
     const username = message.member?.displayName || message.author.username;
     const reply = [
       `✅ ${username} committed:`,
@@ -102,5 +98,5 @@ client.on('messageCreate', async (message) => {
   }
 });
 
-// NOTE; Login bot
+// NOTE; Log in with bot token
 client.login(process.env.DISCORD_TOKEN_LEGACY);
