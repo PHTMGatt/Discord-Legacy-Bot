@@ -3,10 +3,16 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
+const fetch = require('node-fetch'); // NOTE; Explicit import for future use
 const app = express();
 
 // NOTE; Serve static files from src/
 app.use(express.static(path.join(__dirname)));
+
+// NOTE; Health check route for Render/UptimeRobot
+app.get('/healthz', (req, res) => {
+  res.status(200).send('🟢 Legacy Bot is healthy');
+});
 
 // NOTE; Serve styled status page
 app.get('/', (req, res) => {
@@ -18,13 +24,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🌐 Web server running on port ${PORT}`);
 });
-
-// NOTE; Keep bot alive on Render
-setInterval(() => {
-  fetch('https://discord-legacy-bot.onrender.com')
-    .then(() => console.log('🔁 Self-ping successful'))
-    .catch(() => console.log('⚠️ Self-ping failed'));
-}, 14 * 60 * 1000);
 
 const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 
