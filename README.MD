@@ -57,6 +57,27 @@ The bot replies:
 
 ---
 
+## 🚀 Run Locally
+
+**Status:** maintained. Requires Node 18+. The bot needs the **Message Content** intent enabled in the Discord developer portal.
+
+```bash
+npm install
+npm start      # web status page on PORT (default 3000) + Discord login
+npm test       # syntax check (also run by CI)
+```
+
+Create a `.env` file (git-ignored). Names only:
+
+| Variable | Used for |
+| --- | --- |
+| `DISCORD_TOKEN_LEGACY` | Bot login (required) |
+| `PORT` | Optional. Defaults to `3000` |
+
+Health check: `GET /healthz`.
+
+---
+
 ## 🌐 Deployment Notes
 
 Hosted on Render:  
