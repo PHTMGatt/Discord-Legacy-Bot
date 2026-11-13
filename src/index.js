@@ -3,7 +3,6 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
-const fetch = require('node-fetch'); // NOTE; Explicit import for future use
 const app = express();
 
 // NOTE; Serve static files from src/
