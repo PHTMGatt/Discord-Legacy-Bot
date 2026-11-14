@@ -47,6 +47,8 @@ The bot replies:
 
 > ✅ The bot will only respond where explicitly authorized.
 
+> ⏸️ The hosted bot is offline for now because its Render service is suspended. The invite still works, but the bot will not reply until the service is resumed. To use it today, run your own copy with your own bot token (see Run Locally).
+
 ---
 
 ## 📸 Demo
@@ -57,14 +59,35 @@ The bot replies:
 
 ---
 
+## 🚀 Run Locally
+
+**Status:** maintained. Requires Node 18+. The bot needs the **Message Content** intent enabled in the Discord developer portal.
+
+```bash
+npm install
+npm start      # web status page on PORT (default 3000) + Discord login
+npm test       # syntax check (also run by CI)
+```
+
+Create a `.env` file (git-ignored). Names only:
+
+| Variable | Used for |
+| --- | --- |
+| `DISCORD_TOKEN_LEGACY` | Bot login (required) |
+| `PORT` | Optional. Defaults to `3000` |
+
+Health check: `GET /healthz`.
+
+---
+
 ## 🌐 Deployment Notes
 
-Hosted on Render:  
+Deployed on Render as a web service (status page and bot in one process):
 ```
 https://discord-legacy-bot.onrender.com
 ```
 
-- 🔁 Run as a **Background Worker** for continuous uptime
+- ⏸️ The service is currently **suspended**, so that URL and the bot stay offline until it is resumed.
 
 ---
 
