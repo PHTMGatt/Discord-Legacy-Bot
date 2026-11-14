@@ -47,6 +47,8 @@ The bot replies:
 
 > ✅ The bot will only respond where explicitly authorized.
 
+> ⏸️ The hosted bot is offline for now because its Render service is suspended. The invite still works, but the bot will not reply until the service is resumed. To use it today, run your own copy with your own bot token (see Run Locally).
+
 ---
 
 ## 📸 Demo
@@ -80,12 +82,12 @@ Health check: `GET /healthz`.
 
 ## 🌐 Deployment Notes
 
-Hosted on Render:  
+Deployed on Render as a web service (status page and bot in one process):
 ```
 https://discord-legacy-bot.onrender.com
 ```
 
-- 🔁 Run as a **Background Worker** for continuous uptime
+- ⏸️ The service is currently **suspended**, so that URL and the bot stay offline until it is resumed.
 
 ---
 
