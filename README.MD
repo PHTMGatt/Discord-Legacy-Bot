@@ -11,7 +11,7 @@
   This bot replaces the separate <strong>Discord-WebHook-Bot</strong> (Captain Hook).
 </p>
 
-> **Merged.** Captain Hook's job (GitHub push → Discord, optional GPT cleanup) now lives here as `/watch`. The old [Discord-WebHook-Bot](https://github.com/PHTMGatt/Discord-WebHook-Bot) repo is superseded by this one.
+> **Merged.** Captain Hook's job (GitHub push → Discord, optional GPT cleanup) now lives here as `/watch`. The old Discord-WebHook-Bot repo (no longer on GitHub) is superseded by this one.
 
 ---
 
