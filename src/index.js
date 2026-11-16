@@ -1,119 +1,98 @@
-// NOTE; Load environment variables (DISCORD_TOKEN_LEGACY)
-require('dotenv').config();
-
-const express = require('express');
+// Legacy Bot: commit formatter + GitHub push alerts in one Discord bot.
 const path = require('path');
-const app = express();
+const express = require('express');
+const { Client, GatewayIntentBits, PermissionsBitField, Events } = require('discord.js');
+const { load } = require('./config');
+const { Store } = require('./store');
+const { githubHandler } = require('./github');
+const { toSentenceCase, commitHash, formatPush } = require('./format');
+const commands = require('./commands');
 
-// NOTE; Serve static files from src/
-app.use(express.static(path.join(__dirname)));
+function buildApp({ config, store, send }) {
+  const app = express();
+  app.use(express.static(path.join(__dirname, 'public')));
+  app.get('/healthz', (_req, res) => res.status(200).send('Legacy Bot is healthy'));
+  app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+  // Raw body is required to verify GitHub's HMAC signature.
+  app.post(
+    '/github',
+    express.raw({ type: 'application/json', limit: '1mb' }),
+    githubHandler({
+      secret: config.githubSecret,
+      store,
+      send,
+      format: (payload) => formatPush(payload, { apiKey: config.openaiKey, model: config.openaiModel }),
+    })
+  );
+  return app;
+}
 
-// NOTE; Health check route for Render/UptimeRobot
-app.get('/healthz', (req, res) => {
-  res.status(200).send('🟢 Legacy Bot is healthy');
-});
+function main() {
+  const config = load();
+  if (!config.token) {
+    console.error('DISCORD_TOKEN is not set. Copy .env.example to .env and fill it in.');
+    process.exit(1);
+  }
+  if (!config.githubSecret) console.warn('GITHUB_WEBHOOK_SECRET is not set: /github will refuse pushes.');
 
-// NOTE; Serve styled status page
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// NOTE; Use assigned port from Render or fallback to 3000
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🌐 Web server running on port ${PORT}`);
-});
-
-const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
-
-// NOTE; Init Discord client
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
-});
-
-// NOTE; Cache to prevent duplicates per channel
-const lastCommitByChannel = new Map(); // { channelId: { hash: string, timestamp: number } }
-
-// NOTE; Format commit to sentence case and clean punctuation
-function toSentenceCase(input) {
-  const cleaned = input
-    .replace(/[^a-zA-Z0-9.]/g, ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  const words = cleaned.split(' ').map(w => w.toLowerCase());
-  const dupIndex = words.findIndex((w, i) => i > 0 && w === words[i - 1]);
-
-  const parts = dupIndex > 0
-    ? [words.slice(0, dupIndex + 1), words.slice(dupIndex + 1)]
-    : [words];
-
-  const sentences = parts.map(arr => {
-    const s = arr.join(' ');
-    return s.charAt(0).toUpperCase() + s.slice(1);
+  const store = new Store(config.dataDir);
+  const client = new Client({
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
   });
 
-  return sentences.join('. ') + '.';
-}
+  const send = async (channelId, content) => {
+    const channel = await client.channels.fetch(channelId);
+    await channel.send({ content, allowedMentions: { parse: [] } });
+  };
 
-// NOTE; Strict hash generator to normalize comparison
-function generateCommitHash(input) {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '') // remove spaces, punctuation, casing
-    .trim();
-}
+  buildApp({ config, store, send }).listen(config.port, () => console.log(`Web server on port ${config.port}`));
 
-// NOTE; Log when bot is ready
-client.once('ready', () => {
-  console.log(`✅ Bot is live as ${client.user.tag}`);
-});
-
-// NOTE; Message handler
-client.on('messageCreate', async (message) => {
-  if (message.author.bot || !message.guild) return;
-
-  try {
-    const me = await message.guild.members.fetchMe();
-    const perms = message.channel.permissionsFor(me);
-    if (!perms?.has([PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages])) return;
-
-    const raw = message.content;
-    const formatted = toSentenceCase(raw).trim();
-    const hash = generateCommitHash(formatted);
-    const channelId = message.channel.id;
-    const now = Date.now();
-
-    // NOTE; Check last commit hash + cooldown window
-    const last = lastCommitByChannel.get(channelId);
-    if (last && last.hash === hash && now - last.timestamp < 30000) return;
-
-    // NOTE; Store new hash + time
-    lastCommitByChannel.set(channelId, { hash, timestamp: now });
-
-    // NOTE; Delete original if allowed
-    if (perms.has(PermissionsBitField.Flags.ManageMessages)) {
-      await message.delete().catch(() => {});
+  client.once(Events.ClientReady, async () => {
+    console.log(`Bot is live as ${client.user.tag}`);
+    try {
+      if (config.guildId) await (await client.guilds.fetch(config.guildId)).commands.set(commands.definitions);
+      else await client.application.commands.set(commands.definitions);
+      console.log('Slash commands registered');
+    } catch (err) {
+      console.error('Could not register slash commands:', err.message);
     }
+  });
 
-    const username = message.member?.displayName || message.author.username;
-    const reply = [
-      `✅ ${username} committed:`,
-      '```',
-      formatted,
-      '```'
-    ].join('\n');
+  client.on(Events.InteractionCreate, (interaction) => {
+    if (interaction.isChatInputCommand()) commands.handle(interaction, { store });
+  });
 
-    await message.channel.send(reply);
-  } catch (err) {
-    console.error('❌ Error handling message:', err);
-  }
-});
+  // Legacy mode (opt-in per channel): rewrite messages as commits.
+  const lastByChannel = new Map();
+  client.on(Events.MessageCreate, async (message) => {
+    if (message.author.bot || !message.guild || !store.isLegacy(message.channel.id)) return;
+    try {
+      const me = await message.guild.members.fetchMe();
+      const perms = message.channel.permissionsFor(me);
+      if (!perms?.has([PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages])) return;
 
-// NOTE; Log in using bot token
-client.login(process.env.DISCORD_TOKEN_LEGACY);
+      const formatted = toSentenceCase(message.content);
+      if (!formatted) return;
+      const hash = commitHash(formatted);
+      const now = Date.now();
+      const last = lastByChannel.get(message.channel.id);
+      if (last && last.hash === hash && now - last.timestamp < 30000) return;
+      lastByChannel.set(message.channel.id, { hash, timestamp: now });
+
+      if (perms.has(PermissionsBitField.Flags.ManageMessages)) await message.delete().catch(() => {});
+      const name = message.member?.displayName || message.author.username;
+      await message.channel.send({
+        content: `✅ ${name} committed:\n\`\`\`\n${formatted.replace(/```/g, "'''")}\n\`\`\``,
+        allowedMentions: { parse: [] },
+      });
+    } catch (err) {
+      console.error('Error handling message:', err);
+    }
+  });
+
+  client.login(config.token);
+}
+
+if (require.main === module) main();
+
+module.exports = { buildApp };
