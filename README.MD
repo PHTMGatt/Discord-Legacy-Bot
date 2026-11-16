@@ -92,6 +92,15 @@ Health check: `GET /healthz`.
 
 ## 🥧 Deploy on a Raspberry Pi
 
+> **Recommended: use the [raspbi-pilot](https://github.com/PHTMGatt/raspbi-pilot) installer** (one `sudo ./install.sh` sets up this bot and War Oracle as hardened services from `main`). Do not also follow the manual steps below, or you will end up with two installations.
+>
+> Before the first start on a Pi:
+> - In the Discord Developer Portal, open this bot's app, go to **Bot** and turn on the privileged **Message Content Intent**. Without it the bot cannot log in ("Used disallowed intents").
+> - **Stop any other copy of this bot** (for example on your PC). Two copies with the same token answer every command twice.
+> - Leave `DATA_DIR` unset under the raspbi-pilot service: its unit only lets the bot write to its own `data/` folder.
+
+Manual install (alternative):
+
 ```bash
 # Node 20+ (e.g. via NodeSource), then:
 git clone -b claude-forge https://github.com/PHTMGatt/Discord-Legacy-Bot.git
