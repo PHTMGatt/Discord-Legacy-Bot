@@ -1,11 +1,13 @@
-<h1 align="center">📦 Legacy Bot: commit formatter + GitHub push alerts</h1>
+<h1 align="center">Legacy Bot</h1>
 
 <p align="center">
-  <img src="./images/LegacyDCB.png" alt="Legacy Bot" width="180" />
+  <img src="./docs/screenshot.png" alt="Legacy Bot" width="900" />
 </p>
 
+<p align="center">[![CI](https://github.com/PHTMGatt/Discord-Legacy-Bot/actions/workflows/ci.yml/badge.svg)](https://github.com/PHTMGatt/Discord-Legacy-Bot/actions/workflows/ci.yml)</p>
+
 <p align="center">
-  One Discord bot for code chatter: format commit messages on demand, and post GitHub pushes into your channels.
+  Commit formatter + GitHub push alerts. One Discord bot for code chatter: format commit messages on demand, and post GitHub pushes into your channels.
   This bot replaces the separate <strong>Discord-WebHook-Bot</strong> (Captain Hook).
 </p>
 
