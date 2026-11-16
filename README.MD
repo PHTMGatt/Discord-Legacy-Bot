@@ -1,57 +1,36 @@
-<h1 align="center">📦 Legacy Mode: Commit Formatter Bot</h1>
+<h1 align="center">📦 Legacy Bot: commit formatter + GitHub push alerts</h1>
 
 <p align="center">
   <img src="./images/LegacyDCB.png" alt="Legacy Bot" width="180" />
 </p>
 
 <p align="center">
-  A lightweight Discord bot designed for simple, fun commit message formatting inside your server.  
-  Trigger it with keywords and enjoy charming commit summaries on demand.
+  One Discord bot for code chatter: format commit messages on demand, and post GitHub pushes into your channels.
+  This bot replaces the separate <strong>Discord-WebHook-Bot</strong> (Captain Hook).
 </p>
 
----
-
-## 💡 Features
-
-- 🧠 Responds to short keywords (e.g., `readme`)
-- 📝 Formats commit-style responses in real time
-- 💬 Keeps your channels tidy and fun
-- 🔒 Only posts in channels where it has permission
+> **Merged.** Captain Hook's job (GitHub push → Discord, optional GPT cleanup) now lives here as `/watch`. The old [Discord-WebHook-Bot](https://github.com/PHTMGatt/Discord-WebHook-Bot) repo is superseded by this one.
 
 ---
 
-## ⚙️ How It Works
+## 💡 Commands
 
-When a user types:
+| Command | Who | What it does |
+| --- | --- | --- |
+| `/commit text:<raw>` | anyone | Formats text as a clean commit line |
+| `/watch repo:owner/name` | Manage Channels | Posts that repo's GitHub pushes into this channel |
+| `/unwatch repo:owner/name` | Manage Channels | Stops it |
+| `/watching` | anyone | Lists repos posting into this channel |
+| `/legacymode enabled:<bool>` | Manage Channels | Legacy mode: every message in the channel is rewritten as `✅ name committed:` (opt-in, off by default) |
+
+Push alerts look like:
 
 ```
-readme
+**owner/repo**
+🪝 bryen pushed: Updated docs and polished css layout
 ```
 
-The bot replies:
-
-```
-✅ [Bryen] dropped a lil mimmit: `Readme`
-```
-
----
-
-## 🚀 Setup Instructions
-
-1. [Invite the Bot to Your Server](https://discord.com/oauth2/authorize?client_id=1372387773062844436&scope=bot&permissions=0)
-2. Navigate to your target **channel settings**
-3. Under **Permissions**, add the bot to **Roles/Members**
-4. Enable the following permissions:
-   - ✅ Send Messages
-   - ✅ Manage Messages
-
-> ✅ The bot will only respond where explicitly authorized.
-
-> ⏸️ The hosted bot is offline for now because its Render service is suspended. The invite still works, but the bot will not reply until the service is resumed. To use it today, run your own copy with your own bot token (see Run Locally).
-
----
-
-## 📸 Demo
+Messages never ping `@everyone`/`@here`, and commit text can't break out of code fences.
 
 <p align="center">
   <img src="./images/BotUsage.webp" alt="Legacy Bot Usage Demo" width="450" />
@@ -59,35 +38,95 @@ The bot replies:
 
 ---
 
-## 🚀 Run Locally
+## ⚙️ Setup
 
-**Status:** maintained. Requires Node 18+. The bot needs the **Message Content** intent enabled in the Discord developer portal.
+1. Create a bot in the [Discord developer portal](https://discord.com/developers/applications). Under **Bot**, enable the **Message Content** intent (needed for Legacy mode) and copy the token.
+2. Invite it with scopes `bot` + `applications.commands` and permissions View Channel, Send Messages (add Manage Messages if you want Legacy mode to delete the original).
+3. Configure environment variables (see below).
+4. Run it.
+
+### Environment variables
+
+Set these in a git-ignored `.env` file or the process environment. **Secrets live only in env, never in git.**
+
+| Variable | Required | Used for |
+| --- | --- | --- |
+| `DISCORD_TOKEN` | yes | Bot login |
+| `GITHUB_WEBHOOK_SECRET` | for push alerts | Verifies GitHub's `X-Hub-Signature-256`. If unset, `/github` answers 503 and refuses everything |
+| `DISCORD_GUILD_ID` | no | Register slash commands to one server (instant) instead of globally (can take up to an hour) |
+| `OPENAI_API_KEY` | no | Enables GPT commit cleanup (paid). Without it a free local formatter is used |
+| `OPENAI_MODEL` | no | Defaults to `gpt-4o-mini` |
+| `PORT` | no | Defaults to `3000` |
+| `DATA_DIR` | no | Where `store.json` (channel ids only, no secrets) is kept. Defaults to `./data` |
+
+Migrating from the old bots: `DISCORD_TOKEN_LEGACY` is now `DISCORD_TOKEN`. The webhook registry (`webhooks.json`, which held secret webhook URLs) is gone: the bot posts with its own token, so just run `/watch` per channel.
+
+### GitHub webhook
+
+In the repo: **Settings → Webhooks → Add webhook**
+
+- Payload URL: `https://<your-host>/github`
+- Content type: `application/json`
+- Secret: the same value as `GITHUB_WEBHOOK_SECRET`
+- Events: **Just the push event**
+
+Then run `/watch repo:owner/name` in the channel that should receive alerts.
+
+---
+
+## 🚀 Run locally
+
+Requires Node 20+.
 
 ```bash
 npm install
-npm start      # web status page on PORT (default 3000) + Discord login
-npm test       # syntax check (also run by CI)
+npm start      # Discord login + web server (status page, /healthz, /github)
+npm test       # unit tests (also run by CI)
 ```
-
-Create a `.env` file (git-ignored). Names only:
-
-| Variable | Used for |
-| --- | --- |
-| `DISCORD_TOKEN_LEGACY` | Bot login (required) |
-| `PORT` | Optional. Defaults to `3000` |
 
 Health check: `GET /healthz`.
 
 ---
 
-## 🌐 Deployment Notes
+## 🥧 Deploy on a Raspberry Pi
 
-Deployed on Render as a web service (status page and bot in one process):
-```
-https://discord-legacy-bot.onrender.com
+```bash
+# Node 20+ (e.g. via NodeSource), then:
+git clone -b claude-forge https://github.com/PHTMGatt/Discord-Legacy-Bot.git
+cd Discord-Legacy-Bot
+npm ci --omit=dev
+nano .env          # DISCORD_TOKEN, GITHUB_WEBHOOK_SECRET, ... (chmod 600 .env)
 ```
 
-- ⏸️ The service is currently **suspended**, so that URL and the bot stay offline until it is resumed.
+Run it as a service, `/etc/systemd/system/legacy-bot.service`:
+
+```ini
+[Unit]
+Description=Legacy Discord Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/home/pi/Discord-Legacy-Bot
+ExecStart=/usr/bin/node src/index.js
+EnvironmentFile=/home/pi/Discord-Legacy-Bot/.env
+Restart=always
+RestartSec=5
+User=pi
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now legacy-bot
+journalctl -u legacy-bot -f
+```
+
+GitHub must reach `/github` from the internet. Easiest and safest from a home Pi: a [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) (or similar) to `http://localhost:3000`, so no router ports are opened. Slash commands and Legacy mode need no inbound access.
+
+Back up `data/store.json` if you care about watched repos (it is just channel ids).
 
 ---
 
