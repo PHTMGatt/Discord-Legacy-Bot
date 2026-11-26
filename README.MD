@@ -15,6 +15,10 @@
 
 ---
 
+## Status
+
+Checked 2026-11-26 on Windows with Node 26. `npm ci` succeeds and `npm test` passes (10/10). The bot was not started against Discord, and the Pi steps were not run.
+
 ## 💡 Commands
 
 | Command | Who | What it does |
